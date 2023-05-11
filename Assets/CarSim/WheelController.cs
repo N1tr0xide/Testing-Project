@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -33,7 +34,7 @@ public class WheelController : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        Braking();
+        Braking(Convert.ToSingle(Input.GetKey(KeyCode.Space)));
         Aceleration();
         Steering();
 
@@ -55,12 +56,16 @@ public class WheelController : MonoBehaviour
         trans.rotation = rotation;
     }
 
-    void Braking()
+    /// <summary>
+    /// Apply braking torque to all wheels based on player input
+    /// </summary>
+    /// <param name="Input"></param>
+    void Braking(float Input)
     {
         //Braking Input
-        if (Input.GetKey(KeyCode.Space))
+        if (Input != 0)
         {
-            currentBrakingForce = brakingForce;
+            currentBrakingForce = brakingForce * Input;
         }
         else
         {
