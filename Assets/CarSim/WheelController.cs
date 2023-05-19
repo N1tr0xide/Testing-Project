@@ -2,28 +2,33 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class WheelController : MonoBehaviour
 {
-    [Header("Wheel Colliders (0 must be left, 1 must be right)")]  //0 must be left and 1 right
-    public List<WheelCollider> FrontWheelColliders;  
-    public List<WheelCollider> RearWheelColliders;
+    [Header("Wheel Colliders (0-left, 1-right)")]  //0 must be left and 1 right
+    public WheelCollider[] frontWheelColliders;  
+    public WheelCollider[] rearWheelColliders;
 
-    [Header("Wheel Transforms (0 must be left, 1 must be right)")]  //0 must be left and 1 right
-    public List<Transform> FrontWheelTransforms;
-    public List<Transform> RearWheelTransforms;
-
-    [Header("Drivetype")]  //if both are true the car is AWD
-    public bool FWD;
-    public bool RWD;
-
-    public float acceleration = 1000f;
+    [Header("Wheel Transforms (0-left, 1-right)")]  //0 must be left and 1 right
+    public Transform[] frontWheelTransforms;
+    public Transform[] rearWheelTransforms;
+    
+    internal enum drivetype
+    {
+        fwd,
+        rwd,
+        awd
+    }
+    [SerializeField]private drivetype drive;
+    
+    public float torque = 1000f;
     public float brakingForce = 600f;
     public float maxTurnAngle = 40f;
 
-    private float currentAcceleration = 0f;
-    private float currentBrakingForce = 0f;
-    private float currentTurnAngle = 0f;
+    private float _currentTorque = 0f;
+    private float _currentBrakingForce = 0f;
+    private float _currentTurnAngle = 0f;
 
     // Start is called before the first frame update
     void Start()
@@ -33,8 +38,7 @@ public class WheelController : MonoBehaviour
 
     void Update()
     {
-        PlayerInputs(Convert.ToSingle(Input.GetKey(KeyCode.Space)));
-        Steering();
+        PlayerInputs(inputManager._brakes, inputManager._throttle, inputManager._steering);
     }
 
     // Update is called once per frame
@@ -42,40 +46,41 @@ public class WheelController : MonoBehaviour
     {
         Braking();
         Aceleration();
-        
-        VisualWheelUpdate(FrontWheelColliders[0], FrontWheelTransforms[0]);
-        VisualWheelUpdate(FrontWheelColliders[1], FrontWheelTransforms[1]);
-        VisualWheelUpdate(RearWheelColliders[0], RearWheelTransforms[0]);
-        VisualWheelUpdate(RearWheelColliders[1], RearWheelTransforms[1]);
+        Steering();
+        VisualWheelUpdate();
     }
 
-    /// <summary>
-    /// changes current braking force based on player input
-    /// </summary>
-    /// <param name="brakeInput"></param>
-    void PlayerInputs(float brakeInput)
+    void PlayerInputs(float brakeInput, float throttleInput, float steeringInput)
     {
         //Braking Input
-        if (brakeInput != 0)
-        {
-            currentBrakingForce = brakingForce * brakeInput;
-        }
-        else
-        {
-            currentBrakingForce = 0f;
-        }
+        _currentBrakingForce = brakingForce * brakeInput;
+        
+        //Throttle Input
+        _currentTorque = torque * throttleInput;
+        
+        //Steering Input
+        _currentTurnAngle = maxTurnAngle * steeringInput;
     }
 
-    void VisualWheelUpdate(WheelCollider col, Transform trans)
+    void VisualWheelUpdate()
     {
         //get Wheel Collider State
         Vector3 position;
         Quaternion rotation;
-        col.GetWorldPose(out position, out rotation);
-
-        //Set wheel transform state
-        trans.position = position;
-        trans.rotation = rotation;
+        
+        for(int i = 0; i < frontWheelColliders.Length; i++)
+        {
+            frontWheelColliders[i].GetWorldPose(out position, out rotation);
+            frontWheelTransforms[i].position = position;
+            frontWheelTransforms[i].rotation = rotation;
+        }
+        
+        for(int i = 0; i < rearWheelColliders.Length; i++)
+        {
+            rearWheelColliders[i].GetWorldPose(out position, out rotation);
+            rearWheelTransforms[i].position = position;
+            rearWheelTransforms[i].rotation = rotation;
+        }
     }
 
     /// <summary>
@@ -85,64 +90,67 @@ public class WheelController : MonoBehaviour
     void Braking()
     {
         //Apply Braking to all Wheels
-        foreach (WheelCollider Wheel in FrontWheelColliders)
+        foreach (WheelCollider wheel in frontWheelColliders)
         {
-            Wheel.brakeTorque = currentBrakingForce;
+            wheel.brakeTorque = _currentBrakingForce;
         }
-        foreach (WheelCollider Wheel in RearWheelColliders)
+        foreach (WheelCollider wheel in rearWheelColliders)
         {
-            Wheel.brakeTorque = currentBrakingForce;
+            wheel.brakeTorque = _currentBrakingForce;
         }
 
-        //Wheel Brake Test
-        Debug.Log($"Brake Torque Test//  Front Left: {FrontWheelColliders[0].brakeTorque}, Front Right: {FrontWheelColliders[1].brakeTorque};  Rear Left: {RearWheelColliders[0].brakeTorque}, Rear Right: {RearWheelColliders[1].brakeTorque}");
+        /*Wheel Brake Test
+        Debug.Log($"Brake Torque Test//  Front Left: {frontWheelColliders[0].brakeTorque}, Front Right: {frontWheelColliders[1].brakeTorque};  Rear Left: {rearWheelColliders[0].brakeTorque}, Rear Right: {rearWheelColliders[1].brakeTorque}");*/
     }
 
+    /// <summary>
+    /// Apply Motor torque to wheels depending on drivetype
+    /// </summary>
     void Aceleration()
     {
-        //Input
-        currentAcceleration = acceleration * Input.GetAxis("Vertical");
-
+        float totalTorque = _currentTorque;
+        
         //Apply acceleration to wheels
-        if (FWD && RWD)
+        if (drive == drivetype.awd)
         {
-            foreach (WheelCollider Wheel in FrontWheelColliders)
+            foreach (WheelCollider wheel in frontWheelColliders)
             {
-                Wheel.motorTorque = currentAcceleration / 2;
+                wheel.motorTorque = totalTorque / 4;
             }
 
-            foreach (WheelCollider Wheel in RearWheelColliders)
+            foreach (WheelCollider wheel in rearWheelColliders)
             {
-                Wheel.motorTorque = currentAcceleration / 2;
+                wheel.motorTorque = totalTorque / 4;
             }
         }
-        else if (RWD)
+        else if (drive == drivetype.rwd)
         {
-            foreach (WheelCollider Wheel in RearWheelColliders)
+            foreach (WheelCollider wheel in rearWheelColliders)
             {
-                Wheel.motorTorque = currentAcceleration;
+                wheel.motorTorque = totalTorque / 2;
             }
         }
-        else if (FWD)
+        else if (drive == drivetype.fwd)
         {
-            foreach (WheelCollider Wheel in FrontWheelColliders)
+            foreach (WheelCollider wheel in frontWheelColliders)
             {
-                Wheel.motorTorque = currentAcceleration;
+                wheel.motorTorque = totalTorque / 2;
             }
         }
 
         /*Wheel Torque Test
-        Debug.Log($"Wheel Torque Test//  Front Left: {FrontWheelColliders[0].motorTorque}, Front Right: {FrontWheelColliders[1].motorTorque}; Rear Left: {RearWheelColliders[0].motorTorque}, Rear Right: {RearWheelColliders[1].motorTorque}");*/
+        Debug.Log($"Wheel Torque Test//  Front Left: {frontWheelColliders[0].motorTorque}, Front Right: {frontWheelColliders[1].motorTorque}; Rear Left: {rearWheelColliders[0].motorTorque}, Rear Right: {rearWheelColliders[1].motorTorque}");*/
     }
 
+    /// <summary>
+    /// Apply Steering to wheels
+    /// </summary>
     void Steering()
     {
-        currentTurnAngle = maxTurnAngle * Input.GetAxis("Horizontal");
-
         //Apply Steering
-        foreach (WheelCollider Wheel in FrontWheelColliders)
+        foreach (WheelCollider wheel in frontWheelColliders)
         {
-            Wheel.steerAngle = currentTurnAngle;
+            wheel.steerAngle = _currentTurnAngle;
         }
 
         /*Wheel Steering Test

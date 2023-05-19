@@ -12,17 +12,17 @@ public class Player : MonoBehaviour
     /*[Header("Animation")]
     public Animator Animator;*/
         
-    float horizontalInput;
-    float forwardInput;
-    Vector3 moveDirection;
-    Rigidbody rb;
+    float _horizontalInput;
+    float _forwardInput;
+    Vector3 _moveDirection;
+    Rigidbody _rb;
 
     // Start is called before the first frame update
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        _rb = GetComponent<Rigidbody>();
         //Animator.SetBool("IsWalking", false);
-        rb.velocity = Vector3.zero;
+        _rb.velocity = Vector3.zero;
     }
 
     // Update is called once per frame
@@ -38,23 +38,23 @@ public class Player : MonoBehaviour
 
     void Inputs()
     {
-        horizontalInput = Input.GetAxis("Horizontal");
-        forwardInput = Input.GetAxis("Vertical");   
+        _horizontalInput = Input.GetAxis("Horizontal");
+        _forwardInput = Input.GetAxis("Vertical");   
     }
 
     void Movement()
     {
         //Movement Direction Calculation
-        moveDirection = new Vector3(horizontalInput, 0, forwardInput);
+        _moveDirection = new Vector3(_horizontalInput, 0, _forwardInput);
 
         //Ground Movement
-        rb.AddForce(moveDirection.normalized * speed * 10f, ForceMode.Acceleration);
+        _rb.AddForce(_moveDirection.normalized * speed * 10f, ForceMode.Acceleration);
         //Animator.SetBool("IsWalking", rb.velocity != Vector3.zero);
 
         //Look at movement direction
-        if(moveDirection != Vector3.zero)
+        if(_moveDirection != Vector3.zero)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+            Quaternion targetRotation = Quaternion.LookRotation(_moveDirection, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
           
