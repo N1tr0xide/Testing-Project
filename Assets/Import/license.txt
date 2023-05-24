@@ -1,0 +1,11 @@
+Model Information:
+* title:	War Cthulhu
+* source:	https://sketchfab.com/3d-models/war-cthulhu-4dca79da8646463093f7fcb0adfde270
+* author:	Jose-fish (https://sketchfab.com/josespinozareyes)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "War Cthulhu" (https://sketchfab.com/3d-models/war-cthulhu-4dca79da8646463093f7fcb0adfde270) by Jose-fish (https://sketchfab.com/josespinozareyes) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
